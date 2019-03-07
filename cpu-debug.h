@@ -3,8 +3,11 @@
 
 struct CpuDbgBrk
 {
-	int flags, spc;
-	int addr, size;
+	int flags, spc; int addr, size;
+	enum { STEPI = -1, STEPO = -2, 
+		RRET = -3, CONT = -4, STOP = -5 };
+	bool operator==(const CpuDbgBrk& That) {
+		return !memcmp(this, &That, sizeof(*this)); }
 };
 
 struct CpuDbgDlg
@@ -29,7 +32,6 @@ struct CpuDbgDlg
 	
 	// debug interface
 	int (*brkcb)(void* ctx, int cmd, CpuDbgBrk* brk);
-	
 	
 //private:
 	
@@ -67,5 +69,8 @@ struct CpuDbgDlg
 	
 	
 	// break dialog functions
-	void breakDlg(void);
+	void brk_create(void);
+	void brk_init(HWND hBrk);
+	void brk_cmd(int cmd);
+	void brk_once(void);
 };

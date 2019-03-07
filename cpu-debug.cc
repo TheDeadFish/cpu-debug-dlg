@@ -211,7 +211,15 @@ INT_PTR CALLBACK mainDlgProc(
 		ON_MESSAGE(WM_CLOSE, EndDialog(hwnd, 0))
 		ON_MESSAGE(WM_VSCROLL, This->onScroll(wParam, 1))
 		CASE_COMMAND(
-		  ON_COMMAND(IDC_CPUDBG_BD, This->breakDlg());
+			// debugger commands
+		  ON_COMMAND(IDC_CPUDBG_SI, This->brk_cmd(CpuDbgBrk::STEPI));
+			ON_COMMAND(IDC_CPUDBG_SO, This->brk_cmd(CpuDbgBrk::STEPO));
+			ON_COMMAND(IDC_CPUDBG_RR, This->brk_cmd(CpuDbgBrk::RRET));
+			ON_COMMAND(IDC_CPUDBG_CO, This->brk_cmd(CpuDbgBrk::CONT));
+			ON_COMMAND(IDC_CPUDBG_ST, This->brk_cmd(CpuDbgBrk::STOP));
+			ON_COMMAND(IDC_CPUDBG_BR, This->brk_once());
+			ON_COMMAND(IDC_CPUDBG_BD, This->brk_create());
+		  
 			ON_COMMAND(IDC_HEXMODE, This->initScroll());
 	 
 		ON_COMMAND(IDC_ADDRGO, This->goAddr())
