@@ -4,6 +4,7 @@
 
 #define IDC_CPU_DISAM                           1000
 #define IDC_CPU_SCROLL                          1001
+#define IDC_LIST1                               1002
 #define IDC_DUMP                                1004
 #define IDC_ADDRSPC1                            1007
 #define IDC_ADDRSPC2                            1008
@@ -21,3 +22,12 @@
 #define IDC_CPUDBG_SR                           1028
 #define IDC_CPUDBG_ADR                          1029
 #define IDC_CPUDBG_DATA                         1030
+#define IDC_DELETE                              1030
+#define IDC_UPDATE                              1031
+#define IDC_CREATE                              1032
+#define IDC_BRK_WRITE                           1035
+#define IDC_BRK_ONCE                            1036
+#define IDC_SIZE                                1037
+#define IDC_SPACE                               1038
+#define IDC_BRK_EXEC                            1040
+#define IDC_BRK_READ                            1041
