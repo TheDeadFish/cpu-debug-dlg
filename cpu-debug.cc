@@ -211,6 +211,7 @@ INT_PTR CALLBACK mainDlgProc(
 		ON_MESSAGE(WM_CLOSE, EndDialog(hwnd, 0))
 		ON_MESSAGE(WM_VSCROLL, This->onScroll(wParam, 1))
 		CASE_COMMAND(
+		  ON_COMMAND(IDC_CPUDBG_BD, This->breakDlg());
 			ON_COMMAND(IDC_HEXMODE, This->initScroll());
 	 
 		ON_COMMAND(IDC_ADDRGO, This->goAddr())

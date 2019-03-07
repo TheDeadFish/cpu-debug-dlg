@@ -1,6 +1,12 @@
 #pragma once
 #include <windows.h>
 
+struct CpuDbgBrk
+{
+	int flags, spc;
+	int addr, size;
+};
+
 struct CpuDbgDlg
 {
 	// creation api	
@@ -20,6 +26,10 @@ struct CpuDbgDlg
 	void (*initcb)(void* ctx, int mode);
 	byte (*readcb)(void* ctx, int spc, int addr);
 	int (*discb)(void* ctx, char* buff, byte* data, int addr);
+	
+	// debug interface
+	int (*brkcb)(void* ctx, int cmd, CpuDbgBrk* brk);
+	
 	
 //private:
 	
@@ -54,4 +64,8 @@ struct CpuDbgDlg
 	int fmtHex8(char* buff, byte* data);
 	void initCb(int x) { if(initcb) initcb(cbCtx, x); }
 	byte read(int wrPos);
+	
+	
+	// break dialog functions
+	void breakDlg(void);
 };
