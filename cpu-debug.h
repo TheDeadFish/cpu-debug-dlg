@@ -91,6 +91,8 @@ struct CpuDbgDlg
 	int fmtHex8(char* buff, byte* data);
 	void initCb(int x) { if(initcb) initcb(cbCtx, x); }
 	byte read(int wrPos);
+	int getSpcName(int i, char* name);
+	
 	
 	
 	// break dialog functions
@@ -98,4 +100,17 @@ struct CpuDbgDlg
 	void brk_init(HWND hBrk);
 	void brk_cmd(int cmd);
 	void brk_once(void);
+	
+	// break dialog handlers
+	void brk_add(HWND hBrk);
+	void brk_remove(HWND hBrk);
+	void brk_update(HWND hBrk);
+	void brk_updateView(HWND hBrk);
+	int brk_set(HWND hwnd, CpuDbgBrk* brk);
+	
+	
+	
+	
+	
+	
 };

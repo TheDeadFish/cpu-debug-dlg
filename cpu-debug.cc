@@ -184,10 +184,15 @@ void CpuDbgDlg::setSpace(int space)
 
 void CpuDbgDlg::setSpcName(int i, const char* name)
 {
-	HWND hItem = GetDlgItem(hwnd, IDC_ADDRSPC1+1);
+	HWND hItem = GetDlgItem(hwnd, IDC_ADDRSPC1+i);
 	SetWindowTextA(hItem, name);
 	ShowWindow(hItem,name ? SW_SHOW : SW_HIDE);
 	if(!name && (i == curSpace)); setSpace(0);
+}
+
+int CpuDbgDlg::getSpcName(int i, char* name)
+{
+	return GetDlgItemTextA(hwnd, IDC_ADDRSPC1+i, name, 32);
 }
 
 void CpuDbgDlg::setSpcAddr(int i, int base, int end)
