@@ -16,7 +16,15 @@ int discb(void* ctx, char* buff, byte* data, int addr)
 }
 
 
+CpuDbgBrkLst brkLst;
 
+
+int brkcb(void* ctx, int cmd, CpuDbgBrk* brk)
+{
+	if(brkLst.isCmd(cmd)) {
+		printf("cmd: %d\n", cmd); return 0; }
+	return brkLst.add(cmd, brk);
+}
 
 int main()
 {
@@ -24,6 +32,7 @@ int main()
 	dbg.setSpcAddr(0,0,0xFFFF);
 	dbg.readcb = readcb;
 	dbg.discb = discb;
+	dbg.brkcb = brkcb;
 	
 	
 	dbg.create(0);

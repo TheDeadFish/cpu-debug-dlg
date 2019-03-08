@@ -6,8 +6,33 @@ struct CpuDbgBrk
 	int flags, spc; int addr, size;
 	enum { STEPI = -1, STEPO = -2, 
 		RRET = -3, CONT = -4, STOP = -5 };
+	enum { EXEC=1, READ=2, WRITE=4, ONCE=8 };
+	
+	
+		
+		
+		
+		
 	bool operator==(const CpuDbgBrk& That) {
 		return !memcmp(this, &That, sizeof(*this)); }
+};
+
+struct CpuDbgBrkLst
+{
+	enum { BRK_MAX = 8 };
+	CpuDbgBrk data[BRK_MAX]; 
+	int len;
+
+	static bool isCmd(int cmd) { return cmd < 0; }
+
+	//static bool reqValidate(int cmd) {
+	//	return (cmd>>16)>0) && (short(cmd)>= 0); }
+	
+	
+	
+	
+	int add(int cmd, CpuDbgBrk* brk);
+	void remove(int index);
 };
 
 struct CpuDbgDlg

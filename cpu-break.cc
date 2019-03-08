@@ -18,8 +18,38 @@ void CpuDbgDlg::brk_cmd(int cmd)
 
 void CpuDbgDlg::brk_once(void)
 {
-	
+	if(!brkcb) return;
+	CpuDbgBrk brk = {
+		CpuDbgBrk::EXEC|CpuDbgBrk::ONCE,
+		curSpace, sp()->addr, 1 };
+	if(brkcb(cbCtx, 0xFFFF, &brk) < 0) 
+		Beep(1000, 50);
+}
 
+int CpuDbgBrkLst::add(int cmd, CpuDbgBrk* brk)
+{
+	// valid index
+	if(short(cmd) >= 0) {
+		if(cmd >= len) return -1;
+		if(brk) { *brk = data[cmd]; }
+		else { remove(cmd); } return 0;
+	}
+	
+	
+	// locate existing bp
+	for(int i = 0; i < len; i++) {
+		if(data[i] == *brk) return i; }
+		
+	// create new bp
+	if(len == BRK_MAX) return -1;
+		data[len] = *brk; return len++;
+}
+
+void CpuDbgBrkLst::remove(int index)
+{
+	len -= 1;
+	for(int i = index; i < len; i++) 
+		data[i] = data[i+1];
 }
 
 static
