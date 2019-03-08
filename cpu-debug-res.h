@@ -29,7 +29,7 @@
 #define IDC_CREATE                              1032
 #define IDC_BRK_WRITE                           1035
 #define IDC_BRK_ONCE                            1036
-#define IDC_SIZE1                                1037
+#define IDC_SIZE1                               1037
 #define IDC_SPACE                               1038
 #define IDC_BRK_EXEC                            1040
 #define IDC_BRK_READ                            1041

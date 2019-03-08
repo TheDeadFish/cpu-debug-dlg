@@ -208,7 +208,6 @@ INT_PTR CALLBACK mainDlgProc(
 			sendDlgMsg(hwnd, IDC_CPU_DISAM, uMsg, wParam))
 		ON_MESSAGE(WM_DESTROY, This->initCb(0); This->hwnd = 0)
 		ON_MESSAGE(WM_TIMER, This->update())
-		ON_MESSAGE(WM_CLOSE, EndDialog(hwnd, 0))
 		ON_MESSAGE(WM_VSCROLL, This->onScroll(wParam, 1))
 		CASE_COMMAND(
 			// debugger commands
@@ -221,6 +220,7 @@ INT_PTR CALLBACK mainDlgProc(
 			ON_COMMAND(IDC_CPUDBG_BD, This->brk_create());
 		  
 			ON_COMMAND(IDC_HEXMODE, This->initScroll());
+			ON_COMMAND(IDCANCEL, DestroyWindow(hwnd));
 	 
 		ON_COMMAND(IDC_ADDRGO, This->goAddr())
 		ON_RADIO_RNG(IDC_ADDRSPC1, IDC_ADDRSPC5,

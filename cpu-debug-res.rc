@@ -34,7 +34,7 @@ FONT 8, "Ms Shell Dlg"
     PUSHBUTTON      "Update", IDC_UPDATE, 221, 117, 50, 14
     LTEXT           "Addr", IDC_STATIC, 218, 28, 16, 8, SS_LEFT
     LTEXT           "Size", IDC_STATIC, 221, 47, 14, 8, SS_LEFT
-    PUSHBUTTON      "OK", IDOK, 276, 117, 50, 14
+    PUSHBUTTON      "OK", IDCANCEL, 276, 117, 50, 14
 }
 
 
@@ -68,5 +68,5 @@ FONT 8, "MS Sans Serif"
     PUSHBUTTON      "BR", IDC_CPUDBG_BR, 292, 155, 17, 14
     PUSHBUTTON      "BD", IDC_CPUDBG_BD, 314, 155, 17, 14
     PUSHBUTTON      "ST", IDC_CPUDBG_ST, 270, 155, 17, 14
-    PUSHBUTTON      "X", IDOK, 336, 155, 17, 14
+    PUSHBUTTON      "X", IDCANCEL, 336, 155, 17, 14
 }

@@ -61,8 +61,9 @@ INT_PTR CALLBACK brkDlgProc(HWND hwnd,
 	DLGMSG_SWITCH(
 	  ON_MESSAGE(WM_MOUSEWHEEL, 
 			sendDlgMsg(hwnd, IDC_LIST1, uMsg, wParam))
-		ON_MESSAGE(WM_CLOSE, EndDialog(hwnd, 0))
+			
 		CASE_COMMAND(
+		  ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
 			ON_COMMAND(IDC_CPUDBG_BD, This->brk_create());
 		
 		,)
@@ -72,6 +73,6 @@ INT_PTR CALLBACK brkDlgProc(HWND hwnd,
 void CpuDbgDlg::brk_create()
 {
 	if(!brkcb) return;
-	DialogBoxW(getModuleBase(),
-		L"CPUDBGBRK", hwnd, brkDlgProc);
+	DialogBoxParamW(getModuleBase(),
+		L"CPUDBGBRK", hwnd, brkDlgProc, (LPARAM)this);
 };
