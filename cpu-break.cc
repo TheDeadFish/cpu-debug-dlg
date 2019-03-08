@@ -16,7 +16,7 @@ void setDlgItemHex(HWND hwnd,
 	int ctrlID, int data, int minLen)
 {
 	char buff[32];
-	sprintf(buff, "%0*", minLen, data);
+	sprintf(buff, "%0*X", minLen, data);
 	SetDlgItemTextA(hwnd, ctrlID, buff);
 }
 
@@ -50,16 +50,21 @@ void brk_readCtrl(HWND hBrk, CpuDbgBrk* brk)
 	brk->spc = dlgCombo_getSel(hBrk, IDC_SPACE);
 	brk->addr = getDlgItemHex(hBrk, IDC_ADDR);
 	brk->size = GetDlgItemInt(hBrk, IDC_SIZE1, 0, FALSE);
-
-
 }
 
 void CpuDbgDlg::brk_init(HWND hBrk)
 {
+	// init spaces list
+	char buff[32];
+	for(int i = 0; i < MAX_SPC; i++) {
+		if(!getSpcName(i, buff)) break;
+		dlgCombo_addStr(hBrk, IDC_SPACE, buff);
+	}
 	
-
-
-
+	// set default 
+	CpuDbgBrk brk = {CpuDbgBrk::EXEC, 0, 0, 1};
+	brk_updateCtrl(hBrk, &brk);
+	brk_updateView(hBrk);
 }
 
 void CpuDbgDlg::brk_cmd(int cmd)
@@ -86,7 +91,7 @@ void CpuDbgDlg::brk_once(void)
 	CpuDbgBrk brk = {
 		CpuDbgBrk::EXEC|CpuDbgBrk::ONCE,
 		curSpace, sp()->addr, 1 };
-
+	brk_set(hwnd, &brk);
 }
 
 int CpuDbgBrkLst::add(int cmd, CpuDbgBrk* brk)
@@ -152,14 +157,14 @@ void CpuDbgDlg::brk_updateView(HWND hBrk)
 		if(brkcb(cbCtx, i, &brk) < 0) break;
 		
 		
-		char* pos = buff + sprintf(buff, ".%d ", i);
+		char* pos = buff + sprintf(buff, "%d. ", i);
 		pos += getSpcName(brk.spc, pos);
 		pos += sprintf(pos, ", %04X, %d, ", brk.addr, brk.size);
 		
 		if(brk.flags & brk.EXEC) *pos++ = 'X';
-		if(brk.flags & brk.ONCE) *pos++ = 'O';
 		if(brk.flags & brk.READ) *pos++ = 'R';
 		if(brk.flags & brk.WRITE) *pos++ = 'W';
+		if(brk.flags & brk.ONCE) *pos++ = 'O';
 		*pos = 0;
 		
 		listBox_addStr(hBrk, IDC_LIST1, buff);
@@ -186,7 +191,6 @@ INT_PTR CALLBACK brkDlgProc(HWND hwnd,
 		
 		  ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
 			ON_COMMAND(IDC_CPUDBG_BD, This->brk_create());
-		
 		,)
 	,)
 }

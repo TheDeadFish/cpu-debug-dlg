@@ -126,7 +126,7 @@ void CpuDbgDlg::setAddr(int pos)
 	this->sp()->addr = pos; rdPos = 0;
 	
 	// update address edit
-	char buff[32]; fmtAddr(buff, pos);
+	char buff[STR_MAX]; fmtAddr(buff, pos);
 	SetDlgItemTextA(hwnd, IDC_ADDR, buff);
 }
 
@@ -154,8 +154,8 @@ void CpuDbgDlg::onScroll(WPARAM wParam, int delta)
 
 void CpuDbgDlg::goAddr(void)
 {
-	char buff[32]; char* endPtr;
-	GetDlgItemTextA(hwnd, IDC_ADDR, buff, 32);
+	char buff[STR_MAX]; char* endPtr;
+	GetDlgItemTextA(hwnd, IDC_ADDR, buff, STR_MAX);
 	unsigned addr = strtoul(buff, &endPtr, 16);
 	if(endPtr != buff) sp()->addr = addr;
 	this->setAddr(sp()->addr);
@@ -192,7 +192,9 @@ void CpuDbgDlg::setSpcName(int i, const char* name)
 
 int CpuDbgDlg::getSpcName(int i, char* name)
 {
-	return GetDlgItemTextA(hwnd, IDC_ADDRSPC1+i, name, 32);
+	if(!(GetWindowLongW(GetDlgItem(hwnd, 
+	IDC_ADDRSPC1+i), GWL_STYLE) & WS_VISIBLE)) return 0;
+	return GetDlgItemTextA(hwnd, IDC_ADDRSPC1+i, name, STR_MAX);
 }
 
 void CpuDbgDlg::setSpcAddr(int i, int base, int end)

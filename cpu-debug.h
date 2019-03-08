@@ -20,6 +20,7 @@ struct CpuDbgBrk
 struct CpuDbgBrkLst
 {
 	enum { BRK_MAX = 8 };
+	
 	CpuDbgBrk data[BRK_MAX]; 
 	int len;
 
@@ -66,7 +67,7 @@ struct CpuDbgDlg
 	
 	struct SpcInfo { int base, end;
 		int addr, hexMode; };	
-	enum { MAX_SPC = 5 };
+	enum { MAX_SPC = 5, STR_MAX = 32 };
 	SpcInfo spcInfo[MAX_SPC];
 	SpcInfo* sp() { return spcInfo+curSpace; }
 	
