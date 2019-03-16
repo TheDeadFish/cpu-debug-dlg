@@ -2,25 +2,23 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="cpu-debug" />
+		<Option title="test" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/cpu-debug" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="" />
+				<Option output="bin/test" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/" />
-				<Option type="2" />
+				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/cpu-debug" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="" />
+				<Option output="bin/test" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/" />
-				<Option type="2" />
+				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
@@ -30,16 +28,12 @@
 				</Linker>
 			</Target>
 		</Build>
-		<ExtraCommands>
-			<Add after="libres  obj/cpu-debug-res.o obj/cpu-debug-res.res" />
-			<Add after="ar rcs $(TARGET_OUTPUT_FILE) obj/cpu-debug-res.o" />
-		</ExtraCommands>
-		<Unit filename="cpu-break.cc" />
-		<Unit filename="cpu-debug-res.h" />
-		<Unit filename="cpu-debug-res.rc">
-			<Option compilerVar="WINDRES" />
-		</Unit>
-		<Unit filename="cpu-debug.cc" />
+		<Linker>
+			<Add library="bin/libcpu-debug.a" />
+			<Add library="win32hlp" />
+			<Add library="stdshit" />
+			<Add library="gdi32" />
+		</Linker>
 		<Unit filename="cpu-debug.h" />
 		<Unit filename="test.cc" />
 		<Extensions>

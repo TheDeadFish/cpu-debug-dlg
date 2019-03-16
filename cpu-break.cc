@@ -195,9 +195,11 @@ INT_PTR CALLBACK brkDlgProc(HWND hwnd,
 	,)
 }
 
+extern const WCHAR resn_CPUDBGBRK[];
+
 void CpuDbgDlg::brk_create()
 {
 	if(!brkcb) return;
 	DialogBoxParamW(getModuleBase(),
-		L"CPUDBGBRK", hwnd, brkDlgProc, (LPARAM)this);
+		resn_CPUDBGBRK, hwnd, brkDlgProc, (LPARAM)this);
 };
