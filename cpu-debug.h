@@ -3,7 +3,7 @@
 
 struct CpuDbgBrk
 {
-	int flags, spc; int addr, size;
+	int flags, spc; unsigned addr, end;
 	enum { STEPI = -1, STEPO = -2, 
 		RRET = -3, CONT = -4, STOP = -5 };
 	enum { EXEC=1, READ=2, WRITE=4, ONCE=8 };
@@ -48,13 +48,13 @@ struct CpuDbgDlg
 	// control api
 	void setSpcAddr(int i, int base, int end);
 	void setSpcName(int i, const char* name);
-	void setSpace(int spc); void setAddr(int addr); 
+	void setSpace(int spc); void setAddr(unsigned addr); 
 	
 	// callbacks
 	void* cbCtx;
 	void (*initcb)(void* ctx, int mode);
-	byte (*readcb)(void* ctx, int spc, int addr);
-	int (*discb)(void* ctx, char* buff, byte* data, int addr);
+	byte (*readcb)(void* ctx, int spc, unsigned addr);
+	int (*discb)(void* ctx, char* buff, byte* data, unsigned addr);
 	
 	// debug interface
 	int (*brkcb)(void* ctx, int cmd, CpuDbgBrk* brk);
@@ -65,8 +65,9 @@ struct CpuDbgDlg
 	HWND hwnd; int curSpace;
 	RECT viewRC; char* text;
 	
-	struct SpcInfo { int base, end;
-		int addr, hexMode; };	
+	struct SpcInfo { 
+		unsigned base, end;
+		unsigned addr, hexMode; };
 	enum { MAX_SPC = 5, STR_MAX = 32 };
 	SpcInfo spcInfo[MAX_SPC];
 	SpcInfo* sp() { return spcInfo+curSpace; }
@@ -88,7 +89,7 @@ struct CpuDbgDlg
 	void click(LPARAM lParam);
 	
 	// helper functions
-	char* fmtAddr(char* buff, int addr);
+	char* fmtAddr(char* buff, unsigned addr);
 	int fmtHex8(char* buff, byte* data);
 	void initCb(int x) { if(initcb) initcb(cbCtx, x); }
 	byte read(int wrPos);

@@ -32,7 +32,7 @@ void brk_updateCtrl(HWND hBrk, CpuDbgBrk* brk)
 	// set other items
 	dlgCombo_setSel(hBrk, IDC_SPACE, brk->spc);
 	setDlgItemHex(hBrk, IDC_ADDR, brk->addr, 4);
-	SetDlgItemInt(hBrk, IDC_SIZE1, brk->size, FALSE);
+	setDlgItemHex(hBrk, IDC_END, brk->end, 4);
 }
 
 static 
@@ -49,7 +49,7 @@ void brk_readCtrl(HWND hBrk, CpuDbgBrk* brk)
 	// read other items
 	brk->spc = dlgCombo_getSel(hBrk, IDC_SPACE);
 	brk->addr = getDlgItemHex(hBrk, IDC_ADDR);
-	brk->size = GetDlgItemInt(hBrk, IDC_SIZE1, 0, FALSE);
+	brk->end = getDlgItemHex(hBrk, IDC_END);
 }
 
 void CpuDbgDlg::brk_init(HWND hBrk)
@@ -159,7 +159,7 @@ void CpuDbgDlg::brk_updateView(HWND hBrk)
 		
 		char* pos = buff + sprintf(buff, "%d. ", i);
 		pos += getSpcName(brk.spc, pos);
-		pos += sprintf(pos, ", %04X, %d, ", brk.addr, brk.size);
+		pos += sprintf(pos, ", %04X, %d, ", brk.addr, brk.end);
 		
 		if(brk.flags & brk.EXEC) *pos++ = 'X';
 		if(brk.flags & brk.READ) *pos++ = 'R';

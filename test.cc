@@ -4,12 +4,12 @@
 
 const char progName[] = "test";
 
-byte readcb(void* ctx, int space, int addr)
+byte readcb(void* ctx, int space, unsigned addr)
 {
 	return addr;
 }
 
-int discb(void* ctx, char* buff, byte* data, int addr)
+int discb(void* ctx, char* buff, byte* data, unsigned addr)
 {
 	sprintf(buff, "%X, %d", RW(data), addr);
 	return 2;

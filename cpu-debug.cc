@@ -109,7 +109,7 @@ void CpuDbgDlg::update()
 		this->updateView();
 }
 
-char* CpuDbgDlg::fmtAddr(char* buff, int addr)
+char* CpuDbgDlg::fmtAddr(char* buff, unsigned addr)
 {
 	int count = 1; 
 	for(unsigned value = sp()->end;
@@ -119,7 +119,7 @@ char* CpuDbgDlg::fmtAddr(char* buff, int addr)
 	return buff;
 }
 
-void CpuDbgDlg::setAddr(int pos)
+void CpuDbgDlg::setAddr(unsigned pos)
 {
 	// update scrollbar position
 	pos = dlgScroll_setPos(hwnd, IDC_CPU_SCROLL, pos);
