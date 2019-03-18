@@ -1,7 +1,7 @@
 #include "stdshit.h"
 #include "win32hlp.h"
 #include "cpu-debug-res.h"
-#include "cpu-debug.h"
+#include "cpu-debugInt.h"
 
 static 
 int getDlgItemHex(HWND hwnd, int ctrlID)
@@ -52,48 +52,6 @@ void brk_readCtrl(HWND hBrk, CpuDbgBrk* brk)
 	brk->end = getDlgItemHex(hBrk, IDC_END);
 }
 
-void CpuDbgDlg::brk_init(HWND hBrk)
-{
-	// init spaces list
-	char buff[32];
-	for(int i = 0; i < MAX_SPC; i++) {
-		if(!getSpcName(i, buff)) break;
-		dlgCombo_addStr(hBrk, IDC_SPACE, buff);
-	}
-	
-	// set default 
-	CpuDbgBrk brk = {CpuDbgBrk::EXEC, 0, 0, 1};
-	brk_updateCtrl(hBrk, &brk);
-	brk_updateView(hBrk);
-}
-
-void CpuDbgDlg::brk_cmd(int cmd)
-{
-	if(brkcb) brkcb(cbCtx, cmd, NULL);
-}
-
-int CpuDbgDlg::brk_set(HWND hwnd, CpuDbgBrk* brk)
-{
-	int ec = brkcb(cbCtx, 0xFFFF, brk);
-	if(ec < 0) {
-		const char* msg = "out of break slots";
-		if(ec == -2) msg = "bad breakpoint";
-		MessageBoxA(hwnd, msg, "Breakpoint error", MB_OK);
-	}
-	
-	return ec;
-}
-
-
-void CpuDbgDlg::brk_once(void)
-{
-	if(!brkcb) return;
-	CpuDbgBrk brk = {
-		CpuDbgBrk::EXEC|CpuDbgBrk::ONCE,
-		curSpace, sp()->addr, 1 };
-	brk_set(hwnd, &brk);
-}
-
 int CpuDbgBrkLst::add(int cmd, CpuDbgBrk* brk)
 {
 	// valid index
@@ -120,7 +78,54 @@ void CpuDbgBrkLst::remove(int index)
 		data[i] = data[i+1];
 }
 
-void CpuDbgDlg::brk_remove(HWND hBrk)
+
+void CpuDbgDlgInt::brk_cmd(int cmd)
+{
+	if(brkcb) brkcb(cbCtx, cmd, NULL);
+}
+
+int CpuDbgDlgInt::brk_set(HWND hwnd, CpuDbgBrk* brk)
+{
+	int ec = brkcb(cbCtx, 0xFFFF, brk);
+	if(ec < 0) {
+		const char* msg = "out of break slots";
+		if(ec == -2) msg = "bad breakpoint";
+		MessageBoxA(hwnd, msg, "Breakpoint error", MB_OK);
+	}
+	
+	return ec;
+}
+
+
+void CpuDbgDlgInt::brk_once(void)
+{
+	if(!brkcb) return;
+	CpuDbgBrk brk = {
+		CpuDbgBrk::EXEC|CpuDbgBrk::ONCE,
+		curSpace, sp()->addr, 1 };
+	brk_set(hwnd, &brk);
+}
+
+struct CpuDbgDlgBrk : CpuDbgDlgInt
+{
+	MEMBER_DLGPROC2(CpuDbgDlgBrk, brkDlgProc);
+	
+void brkDlgProcInit(HWND hBrk)
+{
+	// init spaces list
+	char buff[32];
+	for(int i = 0; i < MAX_SPC; i++) {
+		if(!getSpcName(i, buff)) break;
+		dlgCombo_addStr(hBrk, IDC_SPACE, buff);
+	}
+	
+	// set default 
+	CpuDbgBrk brk = {CpuDbgBrk::EXEC, 0, 0, 1};
+	brk_updateCtrl(hBrk, &brk);
+	brk_updateView(hBrk);
+}
+
+void brk_remove(HWND hBrk)
 {
 	int sel = listBox_getCurSel(hBrk, IDC_LIST1);
 	if((sel < 0) || !brkcb) return;
@@ -128,13 +133,13 @@ void CpuDbgDlg::brk_remove(HWND hBrk)
 	brk_updateView(hBrk);
 }
 
-void CpuDbgDlg::brk_update(HWND hBrk)
+void brk_update(HWND hBrk)
 {
 	this->brk_remove(hBrk);
 	this->brk_add(hBrk);
 }
 
-void CpuDbgDlg::brk_add(HWND hBrk)
+void brk_add(HWND hBrk)
 {
 	if(!this->brkcb) return;
 	
@@ -148,7 +153,7 @@ void CpuDbgDlg::brk_add(HWND hBrk)
 
 
 
-void CpuDbgDlg::brk_updateView(HWND hBrk)
+void brk_updateView(HWND hBrk)
 {
 	CpuDbgBrk brk; char buff[64];
 	listBox_reset(hBrk, IDC_LIST1);
@@ -172,34 +177,33 @@ void CpuDbgDlg::brk_updateView(HWND hBrk)
 	}
 }
 
-static
-INT_PTR CALLBACK brkDlgProc(HWND hwnd, 
+};
+
+INT_PTR CpuDbgDlgBrk::brkDlgProc(HWND hwnd, 
 	UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	INIT_DLG_CONTEXT(CpuDbgDlg, This->brk_init(hwnd));
-
 	DLGMSG_SWITCH(
 	  ON_MESSAGE(WM_MOUSEWHEEL, 
 			sendDlgMsg(hwnd, IDC_LIST1, uMsg, wParam))
 			
 		CASE_COMMAND(
-		  ON_COMMAND(IDC_CREATE, This->brk_add(hwnd))
-		  ON_COMMAND(IDC_DELETE, This->brk_remove(hwnd))
-		  ON_COMMAND(IDC_UPDATE, This->brk_update(hwnd))
+		  ON_COMMAND(IDC_CREATE, this->brk_add(hwnd))
+		  ON_COMMAND(IDC_DELETE, this->brk_remove(hwnd))
+		  ON_COMMAND(IDC_UPDATE, this->brk_update(hwnd))
 		  
 		
 		
 		  ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
-			ON_COMMAND(IDC_CPUDBG_BD, This->brk_create());
+			ON_COMMAND(IDC_CPUDBG_BD, this->brk_create());
 		,)
 	,)
 }
 
 extern const WCHAR resn_CPUDBGBRK[];
 
-void CpuDbgDlg::brk_create()
+void CpuDbgDlgInt::brk_create()
 {
 	if(!brkcb) return;
-	DialogBoxParamW(getModuleBase(),
-		resn_CPUDBGBRK, hwnd, brkDlgProc, (LPARAM)this);
+	DialogBoxParamW(getModuleBase(), resn_CPUDBGBRK, 
+		hwnd, CpuDbgDlgBrk::cbrkDlgProc, (LPARAM)this);
 };

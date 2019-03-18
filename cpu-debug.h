@@ -1,5 +1,15 @@
 #pragma once
-#include <windows.h>
+
+#define CPUDBGDLG_CALL extern "C" __stdcall
+
+// define basic types
+#ifndef _WINDOWS_
+ typedef void* HWND;
+#endif
+typedef unsigned char byte;
+typedef unsigned int u32;
+
+
 
 struct CpuDbgBrk
 {
@@ -36,83 +46,30 @@ struct CpuDbgBrkLst
 	void remove(int index);
 };
 
+
 struct CpuDbgDlg
 {
-	// creation api	
-	CpuDbgDlg() { ZINIT; }
-	~CpuDbgDlg() { destroy(); }
-	HWND create(HWND hParent);
-	void destroy(void) { DestroyWindow(hwnd); }
-	bool isAlive() { return hwnd; }
-	
-	// control api
-	void setSpcAddr(int i, int base, int end);
-	void setSpcName(int i, const char* name);
-	void setSpace(int spc); void setAddr(unsigned addr); 
-	
+	HWND hwnd; 
+	int curSpace;
+
 	// callbacks
 	void* cbCtx;
 	void (*initcb)(void* ctx, int mode);
-	byte (*readcb)(void* ctx, int spc, unsigned addr);
-	int (*discb)(void* ctx, char* buff, byte* data, unsigned addr);
-	
-	// debug interface
+	byte (*readcb)(void* ctx, int spc, u32 addr);
+	int (*discb)(void* ctx, char* buff, byte* data, u32 addr);
 	int (*brkcb)(void* ctx, int cmd, CpuDbgBrk* brk);
-	
-//private:
-	
-	// 
-	HWND hwnd; int curSpace;
-	RECT viewRC; char* text;
-	
-	struct SpcInfo { 
-		unsigned base, end;
-		unsigned addr, hexMode; };
-	enum { MAX_SPC = 5, STR_MAX = 32 };
-	SpcInfo spcInfo[MAX_SPC];
-	SpcInfo* sp() { return spcInfo+curSpace; }
-	
-	
-	// buffer read state
-	int disMax, rdPos;
-	byte data[128];
-	
-	// message handlers
-	void initDlg(HWND hwnd);
-	void initScroll(void);
-	void onScroll(WPARAM wParam, int delta);
-	void onWheel(WPARAM wParam);
-	void goAddr(void);
-	void update(void); 
-	void updateView(void);
-	void paint(HWND hwnd);
-	void click(LPARAM lParam);
-	
-	// helper functions
-	char* fmtAddr(char* buff, unsigned addr);
-	int fmtHex8(char* buff, byte* data);
-	void initCb(int x) { if(initcb) initcb(cbCtx, x); }
-	byte read(int wrPos);
-	int getSpcName(int i, char* name);
-	
-	
-	
-	// break dialog functions
-	void brk_create(void);
-	void brk_init(HWND hBrk);
-	void brk_cmd(int cmd);
-	void brk_once(void);
-	
-	// break dialog handlers
-	void brk_add(HWND hBrk);
-	void brk_remove(HWND hBrk);
-	void brk_update(HWND hBrk);
-	void brk_updateView(HWND hBrk);
-	int brk_set(HWND hwnd, CpuDbgBrk* brk);
-	
-	
-	
-	
-	
-	
 };
+
+
+// creation api
+CPUDBGDLG_CALL CpuDbgDlg* cpuDbgDlg_create_(HWND hParent);
+CPUDBGDLG_CALL CpuDbgDlg* cpuDbgDlg_create(CpuDbgDlg**, HWND hParent);
+CPUDBGDLG_CALL CpuDbgDlg* cpuDbgDlg_toggle(CpuDbgDlg**, HWND hParent);
+CPUDBGDLG_CALL void cpuDbgDlg_destroy(CpuDbgDlg**);
+
+// control api
+CPUDBGDLG_CALL HWND cpuDbgDlg_alive(CpuDbgDlg*);
+CPUDBGDLG_CALL void cpuDbgDlg_initSpc(CpuDbgDlg*, int i, 
+	u32 base, u32 end, cch* name);
+CPUDBGDLG_CALL void cpuDbgDlg_setSpc(CpuDbgDlg*, int i);
+CPUDBGDLG_CALL void cpuDbgDlg_setAddr(CpuDbgDlg*, u32 addr);

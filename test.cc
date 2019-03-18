@@ -28,14 +28,13 @@ int brkcb(void* ctx, int cmd, CpuDbgBrk* brk)
 
 int main()
 {
-	CpuDbgDlg dbg;
-	dbg.setSpcAddr(0,0,0xFFFF);
-	dbg.readcb = readcb;
-	dbg.discb = discb;
-	dbg.brkcb = brkcb;
+	CpuDbgDlg* dbg = cpuDbgDlg_create_(NULL);
+	cpuDbgDlg_initSpc(dbg,0,0,0xFFFF,0);
 	
-	
-	dbg.create(0);
+	dbg->readcb = readcb;
+	dbg->discb = discb;
+	dbg->brkcb = brkcb;	
+
 	dialogMsgLoop();
 	
 

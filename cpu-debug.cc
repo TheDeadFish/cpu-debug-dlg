@@ -1,7 +1,7 @@
 #include "stdshit.h"
 #include "win32hlp.h"
 #include "cpu-debug-res.h"
-#include "cpu-debug.h"
+#include "cpu-debugInt.h"
 
 #define DISASM_MAX 13
 #define OPSIZE_MAX 8
@@ -27,22 +27,12 @@ int dlgScroll_setPos(HWND hwnd, int ctrlID, int pos)
 	return si.nPos;
 }
 
-static WNDPROC listWndProc;
-LRESULT CALLBACK listWndProcSC(
-	HWND   hwnd,	UINT   uMsg,
-	WPARAM wParam, LPARAM lParam
-) {
-	GET_WND_CONTEXT(CpuDbgDlg);
-
-	if(uMsg == WM_MOUSEWHEEL) {
-		int count = short(HIWORD(wParam)) / -30;
-		This->onScroll(SB_LINEDOWN, count);
-		return 0; }
+struct CpuDbgDlg_ : CpuDbgDlgInt
+{
+	MEMBER_DLGPROC2(CpuDbgDlg_, mainDlgProc);
+	MEMBER_WNDPROC2(CpuDbgDlg_, listWndProcSC);
 	
-	return listWndProc(hwnd, uMsg, wParam, lParam);
-}
-
-byte CpuDbgDlg::read(int wrPos)
+byte read(int wrPos)
 {
 	byte rdat = -1;
 	int addr = sp()->addr + wrPos;
@@ -51,7 +41,7 @@ byte CpuDbgDlg::read(int wrPos)
 	return data[wrPos] = rdat;
 }
 
-int CpuDbgDlg::fmtHex8(char* buff, byte* data)
+int fmtHex8(char* buff, byte* data)
 {
 	sprintf(buff, "%.2X%.2X%.2X%.2X %.2X%.2X%.2X%.2X ",	data[0], 
 		data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
@@ -60,7 +50,7 @@ int CpuDbgDlg::fmtHex8(char* buff, byte* data)
 	sprintf(buff+18, "%.8s", tmp); return 8;
 }
 
-void CpuDbgDlg::updateView(void)
+void updateView(void)
 {
 	// read buffer
 	int wrPos = 0; if(rdPos) {
@@ -88,28 +78,27 @@ void CpuDbgDlg::updateView(void)
 		listBox_addStr(hwnd, IDC_CPU_DISAM, buff);
 	}
 }
-
-void CpuDbgDlg::initDlg(HWND hwnd)
+	
+void mainDlgProcInit(HWND hwnd)
 {
 	this->hwnd = hwnd;
 	listWndProc = subclass_control(hwnd, 
-		IDC_CPU_DISAM, listWndProcSC, this);
+		IDC_CPU_DISAM, clistWndProcSC, this);
 	
 	// setup control fonts
 	HFONT hFont = (HFONT) GetStockObject(OEM_FIXED_FONT);
 	sendDlgMsg(hwnd, IDC_CPU_DISAM,  WM_SETFONT, (WPARAM)hFont, TRUE);
 	
 	setSpace(0); SetTimer(hwnd, 1, 10, 0);
-	this->initCb(1);
 }
 
-void CpuDbgDlg::update()
+void update()
 {
 	if(readcb && (discb || sp()->hexMode))
 		this->updateView();
 }
 
-char* CpuDbgDlg::fmtAddr(char* buff, unsigned addr)
+char* fmtAddr(char* buff, unsigned addr)
 {
 	int count = 1; 
 	for(unsigned value = sp()->end;
@@ -119,7 +108,7 @@ char* CpuDbgDlg::fmtAddr(char* buff, unsigned addr)
 	return buff;
 }
 
-void CpuDbgDlg::setAddr(unsigned pos)
+void setAddr(unsigned pos)
 {
 	// update scrollbar position
 	pos = dlgScroll_setPos(hwnd, IDC_CPU_SCROLL, pos);
@@ -130,7 +119,7 @@ void CpuDbgDlg::setAddr(unsigned pos)
 	SetDlgItemTextA(hwnd, IDC_ADDR, buff);
 }
 
-void CpuDbgDlg::onScroll(WPARAM wParam, int delta)
+void onScroll(WPARAM wParam, int delta)
 {
 	SCROLLINFO si = {sizeof(si), SIF_ALL};
 	GetScrollInfo(GetDlgItem(hwnd,
@@ -152,7 +141,8 @@ void CpuDbgDlg::onScroll(WPARAM wParam, int delta)
 	this->setAddr(nPos);
 }
 
-void CpuDbgDlg::goAddr(void)
+
+void goAddr(void)
 {
 	char buff[STR_MAX]; char* endPtr;
 	GetDlgItemTextA(hwnd, IDC_ADDR, buff, STR_MAX);
@@ -162,7 +152,7 @@ void CpuDbgDlg::goAddr(void)
 }
 
 
-void CpuDbgDlg::initScroll(void)
+void initScroll(void)
 {
 	rdPos = 0;
 	sp()->hexMode = IsDlgButtonChecked(hwnd, IDC_HEXMODE);
@@ -174,7 +164,7 @@ void CpuDbgDlg::initScroll(void)
 		SB_CTL, &si, TRUE);
 }
 
-void CpuDbgDlg::setSpace(int space)
+void setSpace(int space)
 {
 	this->curSpace = space;
 	CheckDlgRadio(hwnd, IDC_ADDRSPC1+space);
@@ -182,64 +172,110 @@ void CpuDbgDlg::setSpace(int space)
 	this->initScroll(); this->setAddr(sp()->addr);	
 }
 
-void CpuDbgDlg::setSpcName(int i, const char* name)
+void initSpcAddr(int i, u32 base, u32 end, cch* name)
 {
 	HWND hItem = GetDlgItem(hwnd, IDC_ADDRSPC1+i);
-	SetWindowTextA(hItem, name);
-	ShowWindow(hItem,name ? SW_SHOW : SW_HIDE);
-	if(!name && (i == curSpace)); setSpace(0);
+	if(name) SetWindowTextA(hItem, name);
+	ShowWindow(hItem,base||end ? SW_SHOW : SW_HIDE);
+	spcInfo[i].base = base; spcInfo[i].end = end;
+	if(i == curSpace) setSpace(base||end ? i : 0);
 }
 
-int CpuDbgDlg::getSpcName(int i, char* name)
+HWND create(HWND hParent)
+{
+	extern const WCHAR resn_CPUDBGDLG[];
+	if(this->hwnd) { ShowWindow(hwnd, SW_SHOW); return hwnd; }
+	return CreateDialogParamW(getModuleBase(),
+		resn_CPUDBGDLG, hParent, cmainDlgProc, (LPARAM)this);		
+}
+
+
+};
+
+
+LRESULT CpuDbgDlg_::listWndProcSC(
+	HWND   hwnd,	UINT   uMsg,
+	WPARAM wParam, LPARAM lParam
+) {
+	if(uMsg == WM_MOUSEWHEEL) {
+		int count = short(HIWORD(wParam)) / -30;
+		this->onScroll(SB_LINEDOWN, count);
+		return 0; }
+	
+	return listWndProc(hwnd, uMsg, wParam, lParam);
+}
+
+INT_PTR CpuDbgDlg_::mainDlgProc(
+	HWND hwnd, UINT uMsg,
+	WPARAM wParam, LPARAM lParam)
+{
+	DLGMSG_SWITCH(
+	  ON_MESSAGE(WM_MOUSEWHEEL, 
+			sendDlgMsg(hwnd, IDC_CPU_DISAM, uMsg, wParam))
+		//ON_MESSAGE(WM_DESTROY, this->initCb(0); this->hwnd = 0)
+		ON_MESSAGE(WM_TIMER, this->update())
+		ON_MESSAGE(WM_VSCROLL, this->onScroll(wParam, 1))
+		CASE_COMMAND(
+			// debugger commands
+		  ON_COMMAND(IDC_CPUDBG_SI, this->brk_cmd(CpuDbgBrk::STEPI));
+			ON_COMMAND(IDC_CPUDBG_SO, this->brk_cmd(CpuDbgBrk::STEPO));
+			ON_COMMAND(IDC_CPUDBG_RR, this->brk_cmd(CpuDbgBrk::RRET));
+			ON_COMMAND(IDC_CPUDBG_CO, this->brk_cmd(CpuDbgBrk::CONT));
+			ON_COMMAND(IDC_CPUDBG_ST, this->brk_cmd(CpuDbgBrk::STOP));
+			ON_COMMAND(IDC_CPUDBG_BR, this->brk_once());
+			ON_COMMAND(IDC_CPUDBG_BD, this->brk_create());
+		  
+			ON_COMMAND(IDC_HEXMODE, this->initScroll());
+			ON_COMMAND(IDCANCEL, DestroyWindow(hwnd));
+	 
+		ON_COMMAND(IDC_ADDRGO, this->goAddr())
+		ON_RADIO_RNG(IDC_ADDRSPC1, IDC_ADDRSPC5,
+			this->setSpace(index))
+	 ,)
+	,)
+}
+
+
+void cpuDbgDlg_initSpc(CpuDbgDlg* This, 
+	int i, u32 base, u32 end, cch* name) 
+{
+	if(cpuDbgDlg_alive(This)) ((CpuDbgDlg_*)This)
+		->initSpcAddr(i, base, end, name);
+}
+
+int CpuDbgDlgInt::getSpcName(int i, char* name)
 {
 	if(!(GetWindowLongW(GetDlgItem(hwnd, 
 	IDC_ADDRSPC1+i), GWL_STYLE) & WS_VISIBLE)) return 0;
 	return GetDlgItemTextA(hwnd, IDC_ADDRSPC1+i, name, STR_MAX);
 }
 
-void CpuDbgDlg::setSpcAddr(int i, int base, int end)
+CpuDbgDlg* cpuDbgDlg_create_(HWND hParent)
 {
-	spcInfo[i].base = base; spcInfo[i].end = end;
-	if(i == curSpace) this->setAddr(sp()->addr);
+	CpuDbgDlg_* This = new CpuDbgDlg_();
+	This->create(hParent); return This;
 }
 
-static
-INT_PTR CALLBACK mainDlgProc(
-	HWND hwnd, UINT uMsg,
-	WPARAM wParam, LPARAM lParam)
+CpuDbgDlg* cpuDbgDlg_create(CpuDbgDlg** ctx, HWND hParent)
 {
-	INIT_DLG_CONTEXT(CpuDbgDlg, This->initDlg(hwnd));
-
-	DLGMSG_SWITCH(
-	  ON_MESSAGE(WM_MOUSEWHEEL, 
-			sendDlgMsg(hwnd, IDC_CPU_DISAM, uMsg, wParam))
-		ON_MESSAGE(WM_DESTROY, This->initCb(0); This->hwnd = 0)
-		ON_MESSAGE(WM_TIMER, This->update())
-		ON_MESSAGE(WM_VSCROLL, This->onScroll(wParam, 1))
-		CASE_COMMAND(
-			// debugger commands
-		  ON_COMMAND(IDC_CPUDBG_SI, This->brk_cmd(CpuDbgBrk::STEPI));
-			ON_COMMAND(IDC_CPUDBG_SO, This->brk_cmd(CpuDbgBrk::STEPO));
-			ON_COMMAND(IDC_CPUDBG_RR, This->brk_cmd(CpuDbgBrk::RRET));
-			ON_COMMAND(IDC_CPUDBG_CO, This->brk_cmd(CpuDbgBrk::CONT));
-			ON_COMMAND(IDC_CPUDBG_ST, This->brk_cmd(CpuDbgBrk::STOP));
-			ON_COMMAND(IDC_CPUDBG_BR, This->brk_once());
-			ON_COMMAND(IDC_CPUDBG_BD, This->brk_create());
-		  
-			ON_COMMAND(IDC_HEXMODE, This->initScroll());
-			ON_COMMAND(IDCANCEL, DestroyWindow(hwnd));
-	 
-		ON_COMMAND(IDC_ADDRGO, This->goAddr())
-		ON_RADIO_RNG(IDC_ADDRSPC1, IDC_ADDRSPC5,
-			This->setSpace(index))
-	 ,)
-	,)
+	if(!cpuDbgDlg_alive(*ctx)) {	cpuDbgDlg_destroy(ctx);
+		*ctx = cpuDbgDlg_create_(hParent); } return *ctx;
 }
 
-HWND CpuDbgDlg::create(HWND hParent)
+CpuDbgDlg* cpuDbgDlg_toggle(CpuDbgDlg** ctx, HWND hParent)
 {
-	if(isAlive()) { ShowWindow(hwnd,
-		SW_SHOW); return hwnd; }
-	return CreateDialogParamW(getModuleBase(),
-		L"CPUDBGDLG", hParent, mainDlgProc, (LPARAM)this);		
+	if(cpuDbgDlg_alive(*ctx)) { cpuDbgDlg_destroy(ctx); }
+	else { cpuDbgDlg_create(ctx, hParent); } return *ctx;
 }
+
+void cpuDbgDlg_destroy(CpuDbgDlg** ctx)
+{
+	CpuDbgDlg* dbg = *ctx;
+	if(dbg) delete dbg; *ctx = 0;
+}
+
+HWND cpuDbgDlg_alive(CpuDbgDlg* This)
+{
+	return This ? This->hwnd : 0;
+}
+
