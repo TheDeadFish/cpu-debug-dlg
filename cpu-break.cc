@@ -3,6 +3,16 @@
 #include "cpu-debug-res.h"
 #include "cpu-debugInt.h"
 
+#define SATURATE_ADDV(v, x, y) ({ if(__builtin_add_overflow \
+	( x, y, &v)) v = std::numeric_limits<__typeof__(v)>::max(); })
+#define SATURATE_ADDT(t, x, y) ({ t v;  SATURATE_ADDV(v, x, y); v; })
+#define SATURATE_ADD(x, y) SATURATE_ADDT(__typeof__ (x+y), x, y)
+
+#define SATURATE_SUBV(v, x, y) ({ if(__builtin_sub_overflow \
+	( x, y, &v)) v = std::numeric_limits<__typeof__(v)>::min(); })
+#define SATURATE_SUBT(t, x, y) ({ t v;  SATURATE_SUBV(v, x, y); v; })
+#define SATURATE_SUB(x, y) SATURATE_SUBT(__typeof__ (x+y), x, y)
+
 static 
 int getDlgItemHex(HWND hwnd, int ctrlID)
 {
@@ -31,8 +41,10 @@ void brk_updateCtrl(HWND hBrk, CpuDbgBrk* brk)
 	
 	// set other items
 	dlgCombo_setSel(hBrk, IDC_SPACE, brk->spc);
-	setDlgItemHex(hBrk, IDC_ADDR, brk->addr, 4);
 	setDlgItemHex(hBrk, IDC_END, brk->end, 4);
+	setDlgItemHex(hBrk, IDC_ADDR, brk->addr, 4);
+	setDlgItemHex(hBrk, IDC_SIZE1, (brk->end-brk->addr)+1, 1);
+	CheckDlgButton(hBrk, rad3, 0);
 }
 
 static 
@@ -110,6 +122,16 @@ struct CpuDbgDlgBrk : CpuDbgDlgInt
 {
 	MEMBER_DLGPROC2(CpuDbgDlgBrk, brkDlgProc);
 	
+	
+void brk_selChg(HWND hBrk)
+{
+	CpuDbgBrk brk;
+	int i = listBox_getCurSel(hBrk, IDC_LIST1);
+	if((i < 0)||(brkcb(cbCtx, i, &brk) < 0)) {
+		brk = {CpuDbgBrk::EXEC, 0, 0, 0};	}
+	brk_updateCtrl(hBrk, &brk);
+}
+	
 void brkDlgProcInit(HWND hBrk)
 {
 	// init spaces list
@@ -120,8 +142,7 @@ void brkDlgProcInit(HWND hBrk)
 	}
 	
 	// set default 
-	CpuDbgBrk brk = {CpuDbgBrk::EXEC, 0, 0, 1};
-	brk_updateCtrl(hBrk, &brk);
+	brk_selChg(hBrk);
 	brk_updateView(hBrk);
 }
 
@@ -130,6 +151,7 @@ void brk_remove(HWND hBrk)
 	int sel = listBox_getCurSel(hBrk, IDC_LIST1);
 	if((sel < 0) || !brkcb) return;
 	brkcb(cbCtx, sel, NULL);
+	brk_selChg(hBrk);
 	brk_updateView(hBrk);
 }
 
@@ -164,7 +186,7 @@ void brk_updateView(HWND hBrk)
 		
 		char* pos = buff + sprintf(buff, "%d. ", i);
 		pos += getSpcName(brk.spc, pos);
-		pos += sprintf(pos, ", %04X, %d, ", brk.addr, brk.end);
+		pos += sprintf(pos, ", %04X, %04X, ", brk.addr, brk.end);
 		
 		if(brk.flags & brk.EXEC) *pos++ = 'X';
 		if(brk.flags & brk.READ) *pos++ = 'R';
@@ -177,6 +199,35 @@ void brk_updateView(HWND hBrk)
 	}
 }
 
+void brk_validate(HWND hBrk)
+{
+	// fetch the sizes
+	unsigned addr = getDlgItemHex(hBrk, IDC_ADDR);
+	unsigned end = getDlgItemHex(hBrk, IDC_END);
+	unsigned size = getDlgItemHex(hBrk, IDC_SIZE1);
+	if(size > 0) size -= 1;
+
+	int mode = GetDlgRadioCheck(hBrk, rad1, rad2);
+	int sMode = IsDlgButtonChecked(hBrk, rad3);
+
+	// adjust the values
+	if(end < addr) { if(mode != 0) 
+		addr = end; else end = addr; }
+	if(sMode) {	
+		if(mode) SATURATE_SUBV(addr, end, size);
+		else SATURATE_ADDV(end, addr, size); }
+	addr = min_max(addr, sp()->base, sp()->end);
+	end = min_max(end, sp()->base, sp()->end);	
+	if(sMode == 0) size = end-addr;
+	
+	// update control state
+	setDlgItemHex(hBrk, IDC_ADDR, addr, 4);
+	setDlgItemHex(hBrk, IDC_END, end, 4);
+	setDlgItemHex(hBrk, IDC_SIZE1, size+1, 1);	
+	CheckDlgRadio(hBrk, rad1+mode);
+	CheckDlgButton(hBrk, rad3, sMode);
+}
+
 };
 
 INT_PTR CpuDbgDlgBrk::brkDlgProc(HWND hwnd, 
@@ -187,6 +238,21 @@ INT_PTR CpuDbgDlgBrk::brkDlgProc(HWND hwnd,
 			sendDlgMsg(hwnd, IDC_LIST1, uMsg, wParam))
 			
 		CASE_COMMAND(
+			// 
+			ON_CONTROL(EN_CHANGE, IDC_ADDR, CheckDlgRadio(hwnd, rad1))
+			ON_CONTROL(EN_CHANGE, IDC_END, CheckDlgRadio(hwnd, rad2))
+			ON_CONTROL(EN_CHANGE, IDC_SIZE1, CheckDlgButton(hwnd, rad3, 1))
+			
+			
+			ON_CONTROL(EN_KILLFOCUS, IDC_ADDR, this->brk_validate(hwnd))
+			ON_CONTROL(EN_KILLFOCUS, IDC_END, this->brk_validate(hwnd))
+			ON_CONTROL(EN_KILLFOCUS, IDC_SIZE1, this->brk_validate(hwnd))
+			ON_COMMAND_RANGE(rad1, rad3, this->brk_validate(hwnd))
+			
+			
+			ON_CONTROL(LBN_SELCHANGE, IDC_LIST1, this->brk_selChg(hwnd));
+			
+			
 		  ON_COMMAND(IDC_CREATE, this->brk_add(hwnd))
 		  ON_COMMAND(IDC_DELETE, this->brk_remove(hwnd))
 		  ON_COMMAND(IDC_UPDATE, this->brk_update(hwnd))

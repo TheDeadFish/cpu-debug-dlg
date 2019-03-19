@@ -14,12 +14,6 @@ struct CpuDbgDlgInt : CpuDbgDlg
 	WNDPROC listWndProc;
 	int rdPos; byte data[128];
 	
-	
-	
-	
-	
-	
-	
 	// common helpers
 	int getSpcName(int i, char* name);
 	
