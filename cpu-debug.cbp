@@ -41,6 +41,7 @@
 		</Unit>
 		<Unit filename="cpu-debug.cc" />
 		<Unit filename="cpu-debug.h" />
+		<Unit filename="cpu-debugInt.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
