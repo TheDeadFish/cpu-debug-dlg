@@ -271,7 +271,8 @@ CpuDbgDlg* cpuDbgDlg_toggle(CpuDbgDlg** ctx, HWND hParent)
 void cpuDbgDlg_destroy(CpuDbgDlg** ctx)
 {
 	CpuDbgDlg* dbg = *ctx;
-	if(dbg) delete dbg; *ctx = 0;
+	if(dbg) { DestroyWindow(dbg->hwnd);
+		delete dbg; *ctx = 0; }
 }
 
 HWND cpuDbgDlg_alive(CpuDbgDlg* This)
